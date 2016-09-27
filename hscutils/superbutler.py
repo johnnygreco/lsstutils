@@ -7,7 +7,7 @@ __all__ = ['DATA_DIR', 'SuperButler']
 
 class SuperButler(object):
     """
-    Wrapper for interatcting with HSC pipeline outputs.
+    A more convenient butler for my specific needs.
 
     Parameters
     ----------
