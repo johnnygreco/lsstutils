@@ -3,9 +3,9 @@ from __future__ import division, print_function
 import numpy as np
 DATA_DIR = '/Volumes/HSC-rerun-20160523'
 
-__all__ = ['DATA_DIR', 'BetterButler']
+__all__ = ['DATA_DIR', 'SuperButler']
 
-class BetterButler(object):
+class SuperButler(object):
     """
     Wrapper for interatcting with HSC pipeline outputs.
 
