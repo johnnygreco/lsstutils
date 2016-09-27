@@ -35,9 +35,10 @@ def make_afw_coords(coord_list):
 
 def tracts_n_patches(coord_list, skymap=None, data_dir=DATA_DIR): 
     """
-    Find the tracts and patches that fall overlap with the 
-    coordinates in coord_list. Pass a rectangular region to 
-    get all tracts and patches within this box. 
+    Find the tracts and patches that overlap with the 
+    coordinates in coord_list. Pass the four corners of 
+    a rectangle to get all tracts and patches that overlap
+    with this region.
 
     Parameters
     ----------
