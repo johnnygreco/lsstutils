@@ -1,10 +1,9 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import division, print_function
 
 import numpy as np
-DATA_DIR = '/Volumes/HSC-20160523/'
+DATA_DIR = '/Volumes/HSC-rerun-20160523'
 
-__all__ = ['DATADIR', 'BetterButler']
+__all__ = ['DATA_DIR', 'BetterButler']
 
 class BetterButler(object):
     """
@@ -24,7 +23,7 @@ class BetterButler(object):
         Data directory. 
     """
 
-    def __init__(self, tract, patch, band='I', butler=None, data_dir=DATADIR):
+    def __init__(self, tract, patch, band='I', butler=None, data_dir=DATA_DIR):
 
         if butler is None:
             import lsst.daf.persistence
