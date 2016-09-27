@@ -2,7 +2,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import numpy as np
-DATADIR = '/Volumes/HSC-20160523/'
+DATA_DIR = '/Volumes/HSC-20160523/'
 
 __all__ = ['DATADIR', 'BetterButler']
 
@@ -20,15 +20,15 @@ class BetterButler(object):
         The photometric band of the observation ('G', 'R', 'I', 'Z', or 'Y').
     butler : Butler object, optional
         If None, will create a butler at initialization.
-    dataDIR : string, optional
+    data_dir : string, optional
         Data directory. 
     """
 
-    def __init__(self, tract, patch, band='I', butler=None, dataDIR=DATADIR):
+    def __init__(self, tract, patch, band='I', butler=None, data_dir=DATADIR):
 
         if butler is None:
             import lsst.daf.persistence
-            self._butler = lsst.daf.persistence.Butler(dataDIR)
+            self._butler = lsst.daf.persistence.Butler(data_dir)
         else:
             self._butler = butler
 
