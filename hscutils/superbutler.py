@@ -40,6 +40,7 @@ class SuperButler(object):
         self._calib = None
         self._wcs = None
         self._maskedImg = None
+        self._skymap = None
 
     @property
     def butler(self):
@@ -83,6 +84,12 @@ class SuperButler(object):
         if self._wcs is None:
             self._wcs = self.calexp.getWcs()
         return self._wcs
+    
+    @property
+    def skymap(self):
+        if self._skymap is None:
+            self._skymap = self.butler.get('deepCoadd_skyMap', immediate=True)
+        return self._skymap
 
     @property
     def maskedImg(self):
