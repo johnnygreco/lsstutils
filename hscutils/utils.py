@@ -67,17 +67,13 @@ def tracts_n_patches(coord_list, skymap=None, data_dir=DATA_DIR):
     if len(coord_list)==1:
         skymap = [skymap.findTract(coord_list[0])]
 
-    tract_patch_list = []
-    for tract_info in skymap:
-        patch_list = tract_info.findPatchList(coord_list)
-        if patch_list and not (tract_info, patch_list) in tract_patch_list:
-            tract_patch_list.append((tract_info, patch_list))
+    tract_patch_list = skymap.findTractPatchList(coord_list)
 
     ids = []
     for tract_info, patch_info_list in tract_patch_list:
         for patch_info in patch_info_list:
             patch_index = patch_info.getIndex()
             ids.append((tract_info.getId(), 
-                           str(patch_index[0])+','+str(patch_index[1])))
+                        str(patch_index[0])+','+str(patch_index[1])))
     region_ids = np.array(ids, dtype=[('tract', int), ('patch', 'S4')])
     return region_ids
