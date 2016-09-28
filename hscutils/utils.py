@@ -64,8 +64,6 @@ def tracts_n_patches(coord_list, skymap=None, data_dir=DATA_DIR):
         import lsst.daf.persistence
         butler = lsst.daf.persistence.Butler(DATA_DIR)
         skymap = butler.get('deepCoadd_skyMap', immediate=True)
-    if len(coord_list)==1:
-        skymap = [skymap.findTract(coord_list[0])]
 
     tract_patch_list = skymap.findTractPatchList(coord_list)
 
