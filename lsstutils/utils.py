@@ -54,6 +54,9 @@ def tracts_n_patches(coord_list, skymap=None, data_dir=DATA_DIR):
     -------
     region_ids : structured ndarray
         Tracts and patches that overlap coord_list.
+    tract_patch_dict : dict
+        Dictionary of dictionaries, which takes a tract 
+        and patch and returns a patch info object.
     """
     if type(coord_list[0])==float or type(coord_list[0])==int:
         coord_list = [make_afw_coords(coord_list)]
@@ -68,10 +71,14 @@ def tracts_n_patches(coord_list, skymap=None, data_dir=DATA_DIR):
     tract_patch_list = skymap.findTractPatchList(coord_list)
 
     ids = []
+    tract_patch_dict = {}
     for tract_info, patch_info_list in tract_patch_list:
+        patch_info_dict = {}
         for patch_info in patch_info_list:
             patch_index = patch_info.getIndex()
-            ids.append((tract_info.getId(), 
-                        str(patch_index[0])+','+str(patch_index[1])))
+            patch_id = str(patch_index[0])+','+str(patch_index[1])
+            ids.append((tract_info.getId(), patch_id))
+            patch_info_dict.update({patch_id:patch_info})
+        tract_patch_dict.update({tract_info.getId():patch_info_dict})
     region_ids = np.array(ids, dtype=[('tract', int), ('patch', 'S4')])
-    return region_ids
+    return region_ids, tract_patch_dict
