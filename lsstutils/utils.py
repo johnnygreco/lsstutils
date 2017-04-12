@@ -3,10 +3,11 @@ from __future__ import division, print_function
 import numpy as np
 import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
+from spherical_geometry.polygon import SphericalPolygon
 
 from .superbutler import DATA_DIR
 
-__all__ = ['make_afw_coords', 'tracts_n_patches']
+__all__ = ['make_afw_coords', 'sky_cone', 'tracts_n_patches']
 
 
 def make_afw_coords(coord_list):
@@ -31,6 +32,39 @@ def make_afw_coords(coord_list):
             afwCoord.IcrsCoord(afwGeom.Angle(ra, afwGeom.degrees),
             afwGeom.Angle(dec, afwGeom.degrees)) for ra, dec in coord_list]
     return afw_coords
+
+
+def sky_cone(ra_c, dec_c, theta, steps=50, include_center=True):
+    """
+    Get ra and dec coordinates of a cone on the sky.
+    
+    Parameters
+    ----------
+    ra_c, dec_c: float
+        Center of cone in degrees.
+    theta: astropy Quantity, float, or int
+        Angular radius of cone. Must be in degrees
+        if not a Quantity object.
+    steps: int, optional
+        Number of steps in the cone.
+    include_center: bool, optional
+        If True, include center point in cone.
+    
+    Returns
+    -------
+    ra, dec: ndarry
+        Coordinates of cone.
+    """
+    if type(theta)==float or type(theta)==int:
+        theta = theta*u.deg
+    cone = SphericalPolygon.from_cone(
+        ra_c, dec_c, theta.to('deg').value, steps=steps)
+    ra, dec = list(cone.to_radec())[0]
+    ra = np.mod(ra - 360., 360.0)
+    if include_center:
+        ra = np.concatenate([ra, [ra_c]])
+        dec = np.concatenate([dec, [dec_c]])
+    return ra, dec
 
 
 def tracts_n_patches(coord_list, skymap=None, data_dir=DATA_DIR): 
