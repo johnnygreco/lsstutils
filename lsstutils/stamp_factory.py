@@ -4,18 +4,19 @@ import os
 import numpy as np
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
-import lsst.daf.persistence
 import lsst.afw.coord as afwCoord
+import lsst.afw.display.rgb as afwRgb
 import lsst.daf.base
+import lsst.daf.persistence
 from astropy import units as u
-from .utils import tracts_n_patches, sky_cone
+from .utils import get_psf, tracts_n_patches, sky_cone
 
 ROOT = '/tigress/HSC/HSC/rerun/production-20160523'
 
-__all__ = ['make_stamp']
+__all__ = ['make_stamp', 'make_rgb_image']
 
 def make_stamp(ra, dec, radius, band='i', skymap=None, butler=None, 
-               pixscale=0.168, root=ROOT):
+               pixscale=0.168, root=ROOT, return_psf=False):
     """
     Generate HSC cutout image.
     
@@ -24,7 +25,7 @@ def make_stamp(ra, dec, radius, band='i', skymap=None, butler=None,
     ra, dec: float
         Center of cutout.
     radius: astropy Quantity, float, or int
-        Angular radius of cone. Must be in degrees
+        Angular radius of cone. Must be in arcsec
         if not a Quantity object.
     band: str, optional
         HSC photometric band.
@@ -34,7 +35,9 @@ def make_stamp(ra, dec, radius, band='i', skymap=None, butler=None,
         HSC data butler (pass one to function if making many cutouts).
     pixscale: float, optional
         Image pixel scale in arcsec/pixel. 
-    
+    return_psf: bool, optional
+        If True, return image PSF.
+
     Returns
     -------
     stamp: lsst.afw.image.ExposureF
@@ -45,6 +48,12 @@ def make_stamp(ra, dec, radius, band='i', skymap=None, butler=None,
         butler = lsst.daf.persistence.Butler(root)
     if skymap is None:
         skymap = butler.get('deepCoadd_skyMap', immediate=True)
+    if type(radius)==float or type(radius)==int:
+        radius *= u.arcsec
+
+    size = int(radius.to('arcsec').value/pixscale)
+    coord = afwCoord.IcrsCoord(ra*afwGeom.degrees, dec*afwGeom.degrees)
+    stamp_shape = (size*2+1, size*2+1)
         
     ########################################
     # Generate ra/dec list & get patches
@@ -72,38 +81,51 @@ def make_stamp(ra, dec, radius, band='i', skymap=None, butler=None,
     cutouts = []
     idx = []
     bbox_sizes = []
-    size = int(radius.to('arcsec').value/pixscale)
-    coord = afwCoord.Coord(ra*afwGeom.degrees, dec*afwGeom.degrees)
+    bbox_origins = []
     
-    for count, img in enumerate(images):
+    for img in images:
         wcs = img.getWcs()
         pix = wcs.skyToPixel(coord)
         pix = afwGeom.Point2I(pix)
         bbox = afwGeom.Box2I(pix, pix)
         bbox.grow(size)
         x0, y0 = bbox.getBegin()
+        bbox_origins.append([x0, y0])
         bbox.clip(img.getBBox(afwImage.PARENT))
         xnew, ynew = bbox.getBeginX()-x0, bbox.getBeginY()-y0
         idx.append([xnew, xnew+bbox.getWidth(), ynew, ynew+bbox.getHeight()])
         bbox_sizes.append(bbox.getWidth() * bbox.getHeight())
         cut = img.Factory(img, bbox, afwImage.PARENT)
         cutouts.append(cut)
-        if count==0:
-            subwcs = cut.getWcs()
-            crpix_1, crpix_2 = subwcs.skyToPixel(coord)
-            crpix_1 -= x0 - 1
-            crpix_2 -= y0 - 1
-            cdmat = wcs.getCDMatrix()      
+
+    ########################################
+    # Stitch cutouts together with the
+    # largest bboxes inserted last
+    ########################################
+
+    stamp_bbox = afwGeom.BoxI(afwGeom.Point2I(0,0), afwGeom.Extent2I(*stamp_shape))
+    stamp = afwImage.MaskedImageF(stamp_bbox)
+    bbox_sorted_ind = np.argsort(bbox_sizes)
+    for i in bbox_sorted_ind:
+        mi = cutouts[i].getMaskedImage()
+        stamp[idx[i][0]: idx[i][1], idx[i][2]: idx[i][3]] = mi
 
     ########################################
     # Build new WCS for cutout
     ########################################
+
+    largest_cutout = cutouts[bbox_sorted_ind[-1]]
+    subwcs = largest_cutout.getWcs()
+    crpix_1, crpix_2 = subwcs.skyToPixel(coord)
+    crpix_1 -= bbox_origins[bbox_sorted_ind[-1]][0] 
+    crpix_2 -= bbox_origins[bbox_sorted_ind[-1]][1]
+    cdmat = wcs.getCDMatrix()      
     
     md = lsst.daf.base.PropertyList()
     md.add('CRVAL1', ra)
     md.add('CRVAL2', dec)
-    md.add('CRPIX1', crpix_1)
-    md.add('CRPIX2', crpix_2)
+    md.add('CRPIX1', crpix_1 + 1)
+    md.add('CRPIX2', crpix_2 + 1)
     md.add('CTYPE1', 'RA---TAN')
     md.add('CTYPE2', 'DEC--TAN')
     md.add('CD1_1', cdmat[0, 0])
@@ -112,20 +134,32 @@ def make_stamp(ra, dec, radius, band='i', skymap=None, butler=None,
     md.add('CD2_2', cdmat[1, 1])
     md.add('RADESYS', 'ICRS')
     stamp_wcs = afwImage.makeWcs(md)
-    
-    ########################################
-    # Stitch cutouts together with the
-    # largest bboxes inserted last
-    ########################################
 
-    shape = (size*2+1, size*2+1)
-    stamp_bbox = afwGeom.BoxI(afwGeom.Point2I(0,0), afwGeom.Extent2I(*shape))
-    stamp = afwImage.MaskedImageF(stamp_bbox)
-    for i in np.argsort(bbox_sizes):
-        if cutouts[i].getDimensions() == afwGeom.Extent2I(*shape):
-            return cutouts[i]
-        mi = cutouts[i].getMaskedImage()
-        stamp[idx[i][0]: idx[i][1], idx[i][2]: idx[i][3]] = mi
     stamp = afwImage.ExposureF(stamp, stamp_wcs)
     
-    return stamp
+    return (stamp, get_psf(largest_cutout, coord)) if return_psf else stamp
+
+
+def make_rgb_image(ra, dec, radius, butler=None, skymap=None, 
+                   rgb='irg', Q=8, dataRange=0.6, root=ROOT, img_size=None):
+
+    if butler is None:
+        butler = lsst.daf.persistence.Butler(root)
+    if skymap is None:
+        skymap = butler.get('deepCoadd_skyMap', immediate=True)
+    if type(radius)==float or type(radius)==int:
+        radius *= u.arcsec
+
+    colors = {}
+    for band in rgb:
+        stamp = make_stamp(ra, dec, radius, band=band, 
+                           butler=butler, skymap=skymap)
+        colors[band] = stamp.getMaskedImage()
+
+    rgb_kws = {'Q': Q, 'dataRange': dataRange}
+    if img_size is not None:
+        rgb_kws['xSize'] = img_size
+    img = afwRgb.makeRGB(
+        colors[rgb[0]], colors[rgb[1]], colors[rgb[2]], **rgb_kws)
+
+    return img
