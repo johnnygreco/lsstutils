@@ -1,5 +1,6 @@
 from __future__ import division, print_function
 
+import warnings
 import numpy as np
 import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
@@ -7,7 +8,7 @@ from spherical_geometry.polygon import SphericalPolygon
 
 from .superbutler import DATA_DIR
 
-__all__ = ['make_afw_coords', 'sky_cone', 'tracts_n_patches']
+__all__ = ['make_afw_coords', 'get_psf', 'sky_cone', 'tracts_n_patches']
 
 
 def make_afw_coords(coord_list):
@@ -34,6 +35,21 @@ def make_afw_coords(coord_list):
     return afw_coords
 
 
+def get_psf(exp, coord):
+    """Get the coadd PSF image."""
+    wcs = exp.getWcs()
+    if type(coord)!=afwCoord.coordLib.IcrsCoord:
+        coord = make_afw_coords(coord)
+    coord = wcs.skyToPixel(coord)
+    psf = exp.getPsf()
+    try:
+        psf_img = psf.computeImage(coord)
+        return psf_img
+    except Exception:
+        warnings.warn('**** Cannot compute PSF Image *****')
+        return None
+
+
 def sky_cone(ra_c, dec_c, theta, steps=50, include_center=True):
     """
     Get ra and dec coordinates of a cone on the sky.
@@ -43,7 +59,7 @@ def sky_cone(ra_c, dec_c, theta, steps=50, include_center=True):
     ra_c, dec_c: float
         Center of cone in degrees.
     theta: astropy Quantity, float, or int
-        Angular radius of cone. Must be in degrees
+        Angular radius of cone. Must be in arcsec
         if not a Quantity object.
     steps: int, optional
         Number of steps in the cone.
@@ -56,7 +72,7 @@ def sky_cone(ra_c, dec_c, theta, steps=50, include_center=True):
         Coordinates of cone.
     """
     if type(theta)==float or type(theta)==int:
-        theta = theta*u.deg
+        theta = theta*u.arcsec
     cone = SphericalPolygon.from_cone(
         ra_c, dec_c, theta.to('deg').value, steps=steps)
     ra, dec = list(cone.to_radec())[0]
