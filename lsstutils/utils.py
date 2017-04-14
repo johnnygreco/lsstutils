@@ -24,7 +24,7 @@ def make_afw_coords(coord_list):
     -------
     afw_coords : list of lsst.afw.coord.IcrsCoord
     """
-    if type(coord_list[0])==float or type(coord_list[0])==int:
+    if type(coord_list[0]) in (float, int, np.float64):
         ra, dec = coord_list
         afw_coords = afwCoord.IcrsCoord(afwGeom.Angle(ra, afwGeom.degrees),
                                         afwGeom.Angle(dec, afwGeom.degrees))
