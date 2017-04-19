@@ -9,29 +9,32 @@ matplotlib.rcParams['mathtext.fontset'] = 'cm'
 
 from astropy import units as u
 
-import lsst.log
-Log = lsst.log.Log()
-Log.setLevel(lsst.log.ERROR)
+try:
+    import lsst.log
+    Log = lsst.log.Log()
+    Log.setLevel(lsst.log.ERROR)
+except ImportError:
+    pass
 
 import lsst.daf.persistence
 import lsst.afw.display.rgb as afwRgb
-
 import lsstutils
 
-def _get_skymap():
-    root = '/tigress/HSC/HSC/rerun/production-20160523'
+ROOT = '/tigress/HSC/HSC/rerun/production-20160523'
+
+def _get_skymap(root=ROOT):
     butler = lsst.daf.persistence.Butler(root)
     skymap = butler.get('deepCoadd_skyMap', immediate=True)
     print()
     return butler, skymap
 
 
-def single_rgb_image(ra, dec, radius, prefix, Q=8., 
-                     dataRange=0.6, scale=20, file_format='png', 
-                     img_size=None, butler=None, skymap=None):
+def single_rgb_image(ra, dec, radius, prefix, Q=8., dataRange=0.6, scale=20, 
+                     file_format='png', img_size=None, butler=None, 
+                     skymap=None, root=ROOT):
 
     if butler is None:
-        butler, skymap = _get_skymap()
+        butler, skymap = _get_skymap(root)
 
     img = lsstutils.make_rgb_image(
         ra, dec, radius, Q=Q, dataRange=dataRange, 
@@ -57,11 +60,11 @@ def single_rgb_image(ra, dec, radius, prefix, Q=8.,
 
 
 def batch_rgb_images(cat_fn, radius, prefix, Q=8, dataRange=0.6, scale=20,
-                     file_format='png', img_size=None):
+                     file_format='png', img_size=None, root=ROOT):
     from astropy.table import Table
     cat = Table.read(cat_fn)
 
-    butler, skymap = _get_skymap()
+    butler, skymap = _get_skymap(root)
 
     print('generating {} rgb images for...'.format(len(cat)))
     for num, obj in enumerate(cat):
@@ -76,6 +79,7 @@ if __name__=='__main__':
     from argparse import ArgumentParser
     
     parser = ArgumentParser()
+
     parser.add_argument(
         '-s', '--single', type=float, nargs=2, default=None,
         help='single mode: ra dec (in deg)')
@@ -95,6 +99,10 @@ if __name__=='__main__':
         '--dataRange', type=float, default=0.6, help='RGB function parameter')
     parser.add_argument(
         '--format', type=str, default='png', help='file format')
+    parser.add_argument(
+        '--root', type=str, default=ROOT,
+        help='Root data directory.')
+
     args = parser.parse_args()
 
     if args.out_prefix is None:
@@ -104,12 +112,12 @@ if __name__=='__main__':
         ra, dec, = args.single
         single_rgb_image(
             ra, dec, args.radius, args.out_prefix, args.Q, 
-            args.dataRange, file_format=args.format)
+            args.dataRange, file_format=args.format, root=args.root)
     elif args.batch:
         cat_fn = args.batch
         batch_rgb_images(
             cat_fn, args.radius, args.out_prefix, args.Q, 
-            args.dataRange, file_format=args.format)
+            args.dataRange, file_format=args.format, root=args.root)
     else:
         print('***** must select single or batch mode *****')
         parser.print_help()
