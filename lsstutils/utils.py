@@ -9,7 +9,7 @@ from spherical_geometry.polygon import SphericalPolygon
 from .superbutler import DATA_DIR
 
 __all__ = ['make_afw_coords', 'get_psf', 'sky_cone', 
-           'tracts_n_patches', 'get_exp_sky_limits']
+           'tracts_n_patches', 'bbox_to_radec']
 
 
 def make_afw_coords(coord_list):
@@ -135,9 +135,9 @@ def tracts_n_patches(coord_list, skymap=None, data_dir=DATA_DIR):
     return region_ids, tract_patch_dict
 
 
-def get_exp_sky_limits(exp):
+def bbox_to_radec(exp):
     """
-    Find ra and dec limits of exposure.
+    Get the corners of exposure in ra and dec.
 
     Parameters
     ----------
@@ -146,16 +146,16 @@ def get_exp_sky_limits(exp):
 
     Returns
     -------
-    ra_lim, dec_lim : lists
-        ra and dec limits.
+    corners : ndarray
+        The corners of the exposure in ra and dec.
     """
-
     wcs = exp.getWcs()
+    bbox = exp.getBBox()
     x0, y0 = exp.getXY0()
-    img_width, img_height = exp.getWidth(), exp.getHeight()
-    ra_max, dec_min = wcs.pixelToSky(afwGeom.Point2D(0+x0, 0+y0))
-    ra_min, dec_max = wcs.pixelToSky(
-        afwGeom.Point2D(img_width-1+x0, img_height-1+y0))
-    ra_lim = [ra_min.asDegrees(), ra_max.asDegrees()]
-    dec_lim = [dec_min.asDegrees(), dec_max.asDegrees()]
-    return ra_lim, dec_lim
+    
+    corners = [] 
+    for corner in bbox.getCorners():
+        p = afwGeom.Point2D(corner.getX(), corner.getY())
+        coord = wcs.pixelToSky(p).toIcrs()
+        corners.append([coord.getRa().asDegrees(), coord.getDec().asDegrees()])
+    return np.array(corners)
