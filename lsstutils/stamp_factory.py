@@ -74,6 +74,10 @@ def make_stamp(ra, dec, radius, band='i', skymap=None, butler=None,
             img = butler.get('deepCoadd_calexp', data_id)
             images.append(img)
 
+    if len(images)==0:
+        print('***** No data at {:.5f} {:.5f} *****'.format(ra, dec))
+        return None
+
     ########################################
     # Get cutouts from each patch
     ########################################
@@ -154,7 +158,11 @@ def make_rgb_image(ra, dec, radius, butler=None, skymap=None,
     for band in rgb:
         stamp = make_stamp(ra, dec, radius, band=band, 
                            butler=butler, skymap=skymap)
-        colors[band] = stamp.getMaskedImage()
+        if stamp:
+            colors[band] = stamp.getMaskedImage()
+
+    if len(colors)==0:
+        return None
 
     rgb_kws = {'Q': Q, 'dataRange': dataRange}
     if img_size is not None:

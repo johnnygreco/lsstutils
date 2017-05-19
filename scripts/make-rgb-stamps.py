@@ -40,23 +40,25 @@ def single_rgb_image(ra, dec, radius, prefix, Q=8., dataRange=0.6, scale=20,
         ra, dec, radius, Q=Q, dataRange=dataRange, 
         butler=butler, skymap=skymap, img_size=img_size)
 
-    fig, ax = plt.subplots(
-        subplot_kw={'yticks':[], 'xticks':[]})
-    ax.imshow(img, origin='lower')
+    if img is not None:
 
-    if scale:
-        shape = img.shape
-        xmin = 15.0
-        xmax = xmin + scale/0.168
-        y=0.93*shape[0]
-        ax.axhline(y=y, xmin=xmin/shape[1], xmax=xmax/shape[1], 
-                   color='w', lw=3.0, zorder=1000)
-        label = str(int(scale))
-        ax.text((xmin+xmax)/2 - 0.042*shape[1], y - 0.072*shape[0], 
-                r'$'+label+'^{\prime\prime}$', color='w', fontsize=20)
+        fig, ax = plt.subplots(
+            subplot_kw={'yticks':[], 'xticks':[]})
+        ax.imshow(img, origin='lower')
 
-    fig.savefig(prefix+'.'+file_format, bbox_inches='tight')
-    plt.close('all')
+        if scale:
+            shape = img.shape
+            xmin = 15.0
+            xmax = xmin + scale/0.168
+            y=0.93*shape[0]
+            ax.axhline(y=y, xmin=xmin/shape[1], xmax=xmax/shape[1], 
+                       color='w', lw=3.0, zorder=1000)
+            label = str(int(scale))
+            ax.text((xmin+xmax)/2 - 0.042*shape[1], y - 0.072*shape[0], 
+                    r'$'+label+'^{\prime\prime}$', color='w', fontsize=20)
+
+        fig.savefig(prefix+'.'+file_format, bbox_inches='tight')
+        plt.close('all')
 
 
 def batch_rgb_images(cat_fn, radius, prefix, Q=8, dataRange=0.6, scale=20,
