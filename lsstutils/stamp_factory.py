@@ -154,12 +154,12 @@ def make_rgb_image(ra, dec, radius, butler=None, skymap=None,
     if type(radius)==float or type(radius)==int:
         radius *= u.arcsec
 
-    colors = {}
+    colors = []
     for band in rgb:
         stamp = make_stamp(ra, dec, radius, band=band, 
                            butler=butler, skymap=skymap)
         if stamp:
-            colors[band] = stamp.getMaskedImage()
+            colors.append(stamp.getMaskedImage())
 
     if len(colors)==0:
         return None
@@ -167,7 +167,6 @@ def make_rgb_image(ra, dec, radius, butler=None, skymap=None,
     rgb_kws = {'Q': Q, 'dataRange': dataRange}
     if img_size is not None:
         rgb_kws['xSize'] = img_size
-    img = afwRgb.makeRGB(
-        colors[rgb[0]], colors[rgb[1]], colors[rgb[2]], **rgb_kws)
+    img = afwRgb.makeRGB(*colors, **rgb_kws)
 
     return img
