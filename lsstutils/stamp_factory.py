@@ -48,7 +48,7 @@ def make_stamp(ra, dec, radius, band='i', skymap=None, butler=None,
         butler = lsst.daf.persistence.Butler(root)
     if skymap is None:
         skymap = butler.get('deepCoadd_skyMap', immediate=True)
-    if type(radius)==float or type(radius)==int:
+    if type(radius) != u.Quantity:
         radius *= u.arcsec
 
     size = int(radius.to('arcsec').value/pixscale)
@@ -69,9 +69,8 @@ def make_stamp(ra, dec, radius, band='i', skymap=None, butler=None,
     images = []
     for t, p in patches:
         data_id = {'tract':t, 'patch':p, 'filter':'HSC-'+band.upper()}
-        fn = butler.get('deepCoadd_calexp_filename', data_id)[0]
-        if os.path.isfile(fn):
-            img = butler.get('deepCoadd_calexp', data_id)
+        if butler.datasetExists('deepCoadd_calexp_hsc', data_id):
+            img = butler.get('deepCoadd_calexp_hsc', data_id, immediate=True)
             images.append(img)
 
     if len(images)==0:
