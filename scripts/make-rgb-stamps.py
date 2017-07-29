@@ -1,4 +1,4 @@
-#!/tigress/HSC/LSST/stack_20160915/Linux64/miniconda2/3.19.0.lsst4/bin/python
+#!/tigress/HSC/LSST/stack_tiger_20170721/python/miniconda2-4.2.12/bin/python
 from __future__ import print_function
 
 import numpy as np

@@ -1,6 +1,5 @@
 from __future__ import division, print_function
 
-import warnings
 import numpy as np
 import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
@@ -47,7 +46,7 @@ def get_psf(exp, coord):
         psf_img = psf.computeImage(coord)
         return psf_img
     except Exception:
-        warnings.warn('**** Cannot compute PSF Image *****')
+        print('**** Cannot compute PSF Image *****')
         return None
 
 
