@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import numpy as np
 import matplotlib
+from matplotlib.patches import Ellipse
 import matplotlib.pyplot as plt
 matplotlib.rcParams['font.family'] = 'serif'
 matplotlib.rcParams['mathtext.fontset'] = 'cm'
@@ -31,14 +32,15 @@ def _get_skymap(root=ROOT):
 
 def single_rgb_image(ra, dec, radius, prefix, Q=8., dataRange=0.6, scale=20, 
                      file_format='png', img_size=None, butler=None, 
-                     skymap=None, root=ROOT):
+                     skymap=None, root=ROOT, dpi=150, ell_pars=None):
 
     if butler is None:
         butler, skymap = _get_skymap(root)
 
-    img = lsstutils.make_rgb_image(
+    img, wcs = lsstutils.make_rgb_image(
         ra, dec, radius, Q=Q, dataRange=dataRange, 
-        butler=butler, skymap=skymap, img_size=img_size)
+        butler=butler, skymap=skymap, img_size=img_size, 
+        return_wcs=True)
 
     if img is not None:
 
@@ -57,12 +59,25 @@ def single_rgb_image(ra, dec, radius, prefix, Q=8., dataRange=0.6, scale=20,
             ax.text((xmin+xmax)/2 - 0.042*shape[1], y - 0.072*shape[0], 
                     r'$'+label+'^{\prime\prime}$', color='w', fontsize=20)
 
-        fig.savefig(prefix+'.'+file_format, bbox_inches='tight')
+        # assumes shape parameters from imfit
+        if ell_pars is not None:
+            r_e, PA, ell, scale = ell_pars
+            r_e_pix = r_e/0.168
+            q = 1.0 - ell
+            diam = 2*r_e_pix
+            x, y = wcs.skyToPixel(lsstutils.make_afw_coords([ra, dec]))
+            e = Ellipse([x, y], scale*diam, scale*diam*q, angle=PA-90,  
+                        ec='c', fc='none', lw=1, ls='--', alpha=0.6)
+            ax.add_patch(e)
+
+        fig.savefig(prefix+'.'+file_format, bbox_inches='tight', 
+                    pad_inches=0, dpi=dpi)
         plt.close('all')
 
 
 def batch_rgb_images(cat_fn, radius, prefix, Q=8, dataRange=0.6, scale=20,
-                     file_format='png', img_size=None, root=ROOT):
+                     file_format='png', img_size=None, root=ROOT, dpi=150,
+                     ellipse_scale=None):
     from astropy.table import Table
     cat = Table.read(cat_fn)
 
@@ -72,9 +87,14 @@ def batch_rgb_images(cat_fn, radius, prefix, Q=8, dataRange=0.6, scale=20,
     for num, obj in enumerate(cat):
         print('source:', num)
         new_prefix = prefix+'-'+str(num)
+        if ellipse_scale is not None:
+            ell_pars = obj['r_e'], obj['PA'], obj['ell'], ellipse_scale
+        else:
+            ell_pars = None
         single_rgb_image(
             obj['ra'], obj['dec'], radius, new_prefix, Q, dataRange, scale, 
-            file_format, img_size, butler=butler, skymap=skymap)
+            file_format, img_size, butler=butler, skymap=skymap, dpi=dpi,
+            ell_pars=ell_pars)
 
 
 if __name__=='__main__':
@@ -104,6 +124,10 @@ if __name__=='__main__':
     parser.add_argument(
         '--root', type=str, default=ROOT,
         help='Root data directory.')
+    parser.add_argument('--dpi', type=float, default=150)
+    parser.add_argument(
+        '--ell-scale', dest='ell_scale', type=float, default=None,
+        help='draw an ellipse on image scaled by this value (batch mode only)')
 
     args = parser.parse_args()
 
@@ -114,12 +138,14 @@ if __name__=='__main__':
         ra, dec, = args.single
         single_rgb_image(
             ra, dec, args.radius, args.out_prefix, args.Q, 
-            args.dataRange, file_format=args.format, root=args.root)
+            args.dataRange, file_format=args.format, root=args.root, 
+            dpi=args.dpi)
     elif args.batch:
         cat_fn = args.batch
         batch_rgb_images(
             cat_fn, args.radius, args.out_prefix, args.Q, 
-            args.dataRange, file_format=args.format, root=args.root)
+            args.dataRange, file_format=args.format, root=args.root, 
+            dpi=args.dpi, ellipse_scale=args.ell_scale)
     else:
         print('***** must select single or batch mode *****')
         parser.print_help()
