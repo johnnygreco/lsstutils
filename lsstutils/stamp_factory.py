@@ -144,7 +144,8 @@ def make_stamp(ra, dec, radius, band='i', skymap=None, butler=None,
 
 
 def make_rgb_image(ra, dec, radius, butler=None, skymap=None, 
-                   rgb='irg', Q=8, dataRange=0.6, root=ROOT, img_size=None):
+                   rgb='irg', Q=8, dataRange=0.6, root=ROOT, img_size=None, 
+                   return_wcs=False):
 
     if butler is None:
         butler = lsst.daf.persistence.Butler(root)
@@ -160,6 +161,9 @@ def make_rgb_image(ra, dec, radius, butler=None, skymap=None,
         if stamp:
             colors.append(stamp.getMaskedImage())
 
+        if return_wcs and band==rgb[0]:
+            wcs = stamp.getWcs()
+
     if len(colors)==0:
         return None
 
@@ -168,4 +172,4 @@ def make_rgb_image(ra, dec, radius, butler=None, skymap=None,
         rgb_kws['xSize'] = img_size
     img = afwRgb.makeRGB(*colors, **rgb_kws)
 
-    return img
+    return (img, wcs) if return_wcs else img
