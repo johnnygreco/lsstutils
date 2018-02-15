@@ -68,7 +68,7 @@ def make_stamp(ra, dec, radius, band='i', skymap=None, butler=None,
     
     images = []
     for t, p in patches:
-        data_id = {'tract':t, 'patch':p, 'filter':'HSC-'+band.upper()}
+        data_id = {'tract':t, 'patch':p.decode(), 'filter':'HSC-'+band.upper()}
         if butler.datasetExists('deepCoadd_calexp_hsc', data_id):
             img = butler.get('deepCoadd_calexp_hsc', data_id, immediate=True)
             images.append(img)

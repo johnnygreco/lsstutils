@@ -8,7 +8,7 @@ from spherical_geometry.polygon import SphericalPolygon
 from .superbutler import DATA_DIR
 
 __all__ = ['make_afw_coords', 'get_psf', 'sky_cone', 
-           'tracts_n_patches', 'bbox_to_radec']
+           'tracts_n_patches', 'bbox_to_radec', 'get_skymap']
 
 
 def make_afw_coords(coord_list):
@@ -75,7 +75,7 @@ def sky_cone(ra_c, dec_c, theta, steps=50, include_center=True):
         theta = theta*u.arcsec
     cone = SphericalPolygon.from_cone(
         ra_c, dec_c, theta.to('deg').value, steps=steps)
-    ra, dec = list(cone.to_radec())[0]
+    ra, dec = list(cone.to_lonlat())[0]
     ra = np.mod(ra - 360., 360.0)
     if include_center:
         ra = np.concatenate([ra, [ra_c]])
@@ -158,3 +158,10 @@ def bbox_to_radec(exp):
         coord = wcs.pixelToSky(p).toIcrs()
         corners.append([coord.getRa().asDegrees(), coord.getDec().asDegrees()])
     return np.array(corners)
+
+
+def get_skymap(data_dir=DATA_DIR):
+    import lsst.daf.persistence
+    butler = lsst.daf.persistence.Butler(data_dir)
+    skymap = butler.get('deepCoadd_skyMap', immediate=True)
+    return butler, skymap
