@@ -16,7 +16,8 @@ ROOT = '/tigress/HSC/HSC/rerun/production-20160523'
 __all__ = ['make_stamp', 'make_rgb_image']
 
 def make_stamp(ra, dec, radius, band='i', skymap=None, butler=None, 
-               pixscale=0.168, root=ROOT, return_psf=False):
+               pixscale=0.168, root=ROOT, return_psf=False, 
+               coadd_label='deepCoadd_calexp'):
     """
     Generate HSC cutout image.
     
@@ -69,8 +70,8 @@ def make_stamp(ra, dec, radius, band='i', skymap=None, butler=None,
     images = []
     for t, p in patches:
         data_id = {'tract':t, 'patch':p.decode(), 'filter':'HSC-'+band.upper()}
-        if butler.datasetExists('deepCoadd_calexp_hsc', data_id):
-            img = butler.get('deepCoadd_calexp_hsc', data_id, immediate=True)
+        if butler.datasetExists(coadd_label, data_id):
+            img = butler.get(coadd_label, data_id, immediate=True)
             images.append(img)
 
     if len(images)==0:
