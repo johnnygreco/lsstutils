@@ -5,7 +5,7 @@ import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
 from spherical_geometry.polygon import SphericalPolygon
 
-from .superbutler import DATA_DIR
+DATA_DIR = '/tigress/HSC/HSC/rerun/production-20160523/'
 
 __all__ = ['make_afw_coords', 'get_psf', 'sky_cone', 
            'tracts_n_patches', 'bbox_to_radec', 'get_skymap']
@@ -26,19 +26,20 @@ def make_afw_coords(coord_list):
     """
     if type(coord_list[0]) in (float, int, np.float64):
         ra, dec = coord_list
-        afw_coords = afwCoord.IcrsCoord(afwGeom.Angle(ra, afwGeom.degrees),
-                                        afwGeom.Angle(dec, afwGeom.degrees))
+        afw_coords = afwGeom.SpherePoint(afwGeom.Angle(ra, afwGeom.degrees),
+                                         afwGeom.Angle(dec, afwGeom.degrees))
     else:
         afw_coords = [
-            afwCoord.IcrsCoord(afwGeom.Angle(ra, afwGeom.degrees),
-            afwGeom.Angle(dec, afwGeom.degrees)) for ra, dec in coord_list]
+            afwGeom.SpherePoint(
+                afwGeom.Angle(ra, afwGeom.degrees),
+                afwGeom.Angle(dec, afwGeom.degrees)) for ra, dec in coord_list]
     return afw_coords
 
 
 def get_psf(exp, coord):
     """Get the coadd PSF image."""
     wcs = exp.getWcs()
-    if type(coord)!=afwCoord.coordLib.IcrsCoord:
+    if type(coord)!=afwGeom.SpherePoint:
         coord = make_afw_coords(coord)
     coord = wcs.skyToPixel(coord)
     psf = exp.getPsf()
@@ -110,7 +111,7 @@ def tracts_n_patches(coord_list, skymap=None, data_dir=DATA_DIR):
     """
     if type(coord_list[0])==float or type(coord_list[0])==int:
         coord_list = [make_afw_coords(coord_list)]
-    elif type(coord_list[0])!=afwCoord.coordLib.IcrsCoord:
+    elif type(coord_list[0])!=afwGeom.SpherePoint:
         coord_list = make_afw_coords(coord_list)
 
     if skymap is None:
