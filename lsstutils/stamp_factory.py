@@ -53,7 +53,7 @@ def make_stamp(ra, dec, radius, band='i', skymap=None, butler=None,
         radius *= u.arcsec
 
     size = int(radius.to('arcsec').value/pixscale)
-    coord = afwCoord.IcrsCoord(ra*afwGeom.degrees, dec*afwGeom.degrees)
+    coord = afwGeom.SpherePoint(ra*afwGeom.degrees, dec*afwGeom.degrees)
     stamp_shape = (size*2+1, size*2+1)
         
     ########################################
@@ -123,7 +123,7 @@ def make_stamp(ra, dec, radius, band='i', skymap=None, butler=None,
     crpix_1, crpix_2 = subwcs.skyToPixel(coord)
     crpix_1 -= bbox_origins[bbox_sorted_ind[-1]][0] 
     crpix_2 -= bbox_origins[bbox_sorted_ind[-1]][1]
-    cdmat = wcs.getCDMatrix()      
+    cdmat = wcs.getCdMatrix()      
     
     md = lsst.daf.base.PropertyList()
     md.add('CRVAL1', ra)
@@ -137,7 +137,7 @@ def make_stamp(ra, dec, radius, band='i', skymap=None, butler=None,
     md.add('CD1_2', cdmat[0, 1])
     md.add('CD2_2', cdmat[1, 1])
     md.add('RADESYS', 'ICRS')
-    stamp_wcs = afwImage.makeWcs(md)
+    stamp_wcs = afwGeom.makeSkyWcs(md)
 
     stamp = afwImage.ExposureF(stamp, stamp_wcs)
     
