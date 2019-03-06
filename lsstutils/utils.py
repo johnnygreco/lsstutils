@@ -44,7 +44,7 @@ def get_psf(exp, coord):
     coord = wcs.skyToPixel(coord)
     psf = exp.getPsf()
     try:
-        psf_img = psf.computeImage(coord)
+        psf_img = psf.computeKernelImage(coord)
         return psf_img
     except Exception:
         print('**** Cannot compute PSF Image *****')
