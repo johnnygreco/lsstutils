@@ -107,7 +107,8 @@ def make_stamp(ra, dec, radius, band='i', skymap=None, butler=None,
     # largest bboxes inserted last
     ########################################
 
-    stamp_bbox = afwGeom.BoxI(afwGeom.Point2I(0,0), afwGeom.Extent2I(*stamp_shape))
+    stamp_bbox = afwGeom.BoxI(afwGeom.Point2I(0,0), 
+                              afwGeom.Extent2I(*stamp_shape))
     stamp = afwImage.MaskedImageF(stamp_bbox)
     bbox_sorted_ind = np.argsort(bbox_sizes)
     for i in bbox_sorted_ind:
