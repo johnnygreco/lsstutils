@@ -156,7 +156,7 @@ def bbox_to_radec(exp):
     corners = [] 
     for corner in bbox.getCorners():
         p = afwGeom.Point2D(corner.getX(), corner.getY())
-        coord = wcs.pixelToSky(p).toIcrs()
+        coord = wcs.pixelToSky(p)
         corners.append([coord.getRa().asDegrees(), coord.getDec().asDegrees()])
     return np.array(corners)
 
